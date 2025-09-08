@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Code Tools</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .tabs button {
+      padding: 10px 20px;
+      margin: 0 5px;
+      border: none;
+      background: #ddd;
+      cursor: pointer;
+    }
+    .tabs button.active {
+      background: #007bff;
+      color: white;
+    }
+    .tab-content {
+      display: none;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    select, input, textarea, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    textarea {
+      resize: vertical;
+    }
+    button.submit {
+      background: #007bff;
+      color: white;
+      border: none;
+      margin-top: 15px;
+      cursor: pointer;
+    }
+    button.submit:hover {
+      background: #0056b3;
+    }
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 800px;
+      width: 90%;
+      max-height: 80%;
+      overflow-y: auto;
+      font-family: Consolas, Monaco, monospace;
+    }
+    .modal-content button {
+      margin-top: 15px;
+      background: #555;
+      color: #fff;
+      border: none;
+      padding: 8px 15px;
+      cursor: pointer;
+    }
+    .modal-content button:hover {
+      background: #333;
+    }
+    /* JSON Viewer styles */
+    .json-viewer {
+      font-family: Consolas, Monaco, monospace;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .json-key {
+      color: #9cdcfe;
+    }
+    .json-string {
+      color: #ce9178;
+    }
+    .json-number {
+      color: #b5cea8;
+    }
+    .json-boolean {
+      color: #569cd6;
+    }
+    .json-null {
+      color: #808080;
+    }
+    .json-collapsible {
+      cursor: pointer;
+      color: #dcdcaa;
+    }
+    .json-nested {
+      margin-left: 20px;
+      border-left: 1px dashed #555;
+      padding-left: 10px;
+      display: none;
+    }
+    .json-nested.open {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>Code Tools</h1>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button id="tab-gen" class="active">Code Generation</button>
+    <button id="tab-conv">Code Conversion</button>
+  </div>
+
+  <!-- Code Generation -->
+  <div id="content-gen" class="tab-content active">
+    <form id="form-gen">
+      <label>Select Technology Type:</label>
+      <select id="gen-tech" required>
+        <option value="">Select Technology Type</option>
+        <option value="Frontend">Frontend</option>
+        <option value="Backend">Backend</option>
+        <option value="Database">Database</option>
+      </select>
+
+      <label>Select Framework/Language:</label>
+      <select id="gen-framework" required disabled>
+        <option value="">Select Framework/Language</option>
+      </select>
+
+      <label>Repository URL/Name:</label>
+      <input type="text" id="gen-repo" placeholder="Enter repository URL or name...">
+
+      <label>User Requirement:</label>
+      <textarea id="gen-req" rows="6" placeholder="Enter your requirements..." required></textarea>
+
+      <button type="submit" class="submit">Generate</button>
+    </form>
+  </div>
+
+  <!-- Code Conversion -->
+  <div id="content-conv" class="tab-content">
+    <form id="form-conv">
+      <label>Select Technology Type:</label>
+      <select id="conv-tech" required>
+        <option value="">Select Technology Type</option>
+        <option value="Frontend">Frontend</option>
+        <option value="Backend">Backend</option>
+        <option value="Database">Database</option>
+      </select>
+
+      <label>Source Language:</label>
+      <select id="conv-source" required disabled>
+        <option value="">Select Source Language</option>
+      </select>
+
+      <label>Destination Language:</label>
+      <select id="conv-dest" required disabled>
+        <option value="">Select Destination Language</option>
+      </select>
+
+      <label>Repository URL/Name:</label>
+      <input type="text" id="conv-repo" placeholder="Enter repository URL or name...">
+
+      <label>Additional Instructions:</label>
+      <textarea id="conv-instructions" rows="4" placeholder="Enter your additional instructions..."></textarea>
+
+      <button type="submit" class="submit">Convert</button>
+    </form>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <div id="modal-result" class="json-viewer"></div>
+      <button onclick="closeModal()">Close</button>
+    </div>
+  </div>
+
+  <script>
+    // Framework options
+    const frameworkOptions = {
+      Frontend: ['React', 'Vue', 'JavaScript', 'Angular', 'HTML', 'CSS'],
+      Backend: ['Python', 'Java', 'ASP.NET', 'Django', 'Node.js', 'Spring Boot', 'PHP', 'Flask'],
+      Database: ['Oracle', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'SQLite']
+    };
+
+    // Tabs
+    const tabGen = document.getElementById("tab-gen");
+    const tabConv = document.getElementById("tab-conv");
+    const contentGen = document.getElementById("content-gen");
+    const contentConv = document.getElementById("content-conv");
+
+    tabGen.addEventListener("click", () => {
+      tabGen.classList.add("active");
+      tabConv.classList.remove("active");
+      contentGen.classList.add("active");
+      contentConv.classList.remove("active");
+    });
+
+    tabConv.addEventListener("click", () => {
+      tabConv.classList.add("active");
+      tabGen.classList.remove("active");
+      contentConv.classList.add("active");
+      contentGen.classList.remove("active");
+    });
+
+    // Code Generation form
+    document.getElementById("gen-tech").addEventListener("change", function () {
+      const tech = this.value;
+      const frameworkSelect = document.getElementById("gen-framework");
+      frameworkSelect.innerHTML = '<option value="">Select Framework/Language</option>';
+      if (tech) {
+        frameworkOptions[tech].forEach(f => {
+          const opt = document.createElement("option");
+          opt.value = f;
+          opt.textContent = f;
+          frameworkSelect.appendChild(opt);
+        });
+        frameworkSelect.disabled = false;
+      } else {
+        frameworkSelect.disabled = true;
+      }
+    });
+
+    document.getElementById("form-gen").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const tech = document.getElementById("gen-tech").value;
+      const framework = document.getElementById("gen-framework").value;
+      const repo = document.getElementById("gen-repo").value;
+      const requirement = document.getElementById("gen-req").value;
+
+      const reqWithFramework = `This is framework ${framework} and this is the ${tech} which you need to consider for the below user requirement.\n${requirement}`;
+
+      const postData = {
+        repo_url: repo,
+        requirement_text: reqWithFramework
+      };
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/codegeneration", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "accept": "*/*" },
+          body: JSON.stringify(postData)
+        });
+        const data = await res.json();
+        console.log("Code Generation API Response:", data);
+        showModal(JSON.stringify(data, null, 2));
+      } catch (err) {
+        console.error("Error:", err);
+        showModal("Error: " + err.message);
+      }
+    });
+
+    // Code Conversion form
+    document.getElementById("conv-tech").addEventListener("change", function () {
+      const tech = this.value;
+      const source = document.getElementById("conv-source");
+      const dest = document.getElementById("conv-dest");
+      source.innerHTML = '<option value="">Select Source Language</option>';
+      dest.innerHTML = '<option value="">Select Destination Language</option>';
+      if (tech) {
+        frameworkOptions[tech].forEach(f => {
+          const opt = document.createElement("option");
+          opt.value = f;
+          opt.textContent = f;
+          source.appendChild(opt);
+        });
+        source.disabled = false;
+      } else {
+        source.disabled = true;
+        dest.disabled = true;
+      }
+    });
+
+    document.getElementById("conv-source").addEventListener("change", function () {
+      const tech = document.getElementById("conv-tech").value;
+      const dest = document.getElementById("conv-dest");
+      dest.innerHTML = '<option value="">Select Destination Language</option>';
+      if (tech && this.value) {
+        frameworkOptions[tech].forEach(f => {
+          if (f !== this.value) {
+            const opt = document.createElement("option");
+            opt.value = f;
+            opt.textContent = f;
+            dest.appendChild(opt);
+          }
+        });
+        dest.disabled = false;
+      } else {
+        dest.disabled = true;
+      }
+    });
+
+    document.getElementById("form-conv").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const tech = document.getElementById("conv-tech").value;
+      const source = document.getElementById("conv-source").value;
+      const dest = document.getElementById("conv-dest").value;
+      const repo = document.getElementById("conv-repo").value;
+      const instructions = document.getElementById("conv-instructions").value;
+
+      const postData = {
+        technologyType: tech,
+        sourceLanguage: source,
+        destinationLanguage: dest,
+        repositoryUrl: repo,
+        additionalInstructions: instructions
+      };
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/codeconversion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "accept": "*/*" },
+          body: JSON.stringify(postData)
+        });
+        const data = await res.json();
+        console.log("Code Conversion API Response:", data);
+        showModal(JSON.stringify(data, null, 2));
+      } catch (err) {
+        console.error("Error:", err);
+        showModal("Error: " + err.message);
+      }
+    });
+
+    // Modal logic
+    function showModal(result) {
+      const container = document.getElementById("modal-result");
+      container.innerHTML = "";
+      renderJSON(result, container);
+      document.getElementById("modal").style.display = "flex";
+    }
+    function closeModal() {
+      document.getElementById("modal").style.display = "none";
+    }
+    // JSON Renderer
+    function renderJSON(data, container) {
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data);
+        } catch {
+          container.textContent = data;
+          return;
+        }
+      }
+
+      function createNode(key, value) {
+        const wrapper = document.createElement("div");
+
+        if (typeof value === "object" && value !== null) {
+          const header = document.createElement("div");
+          header.className = "json-collapsible";
+          header.textContent = key + " {…}";
+          const nested = document.createElement("div");
+          nested.className = "json-nested";
+
+          header.addEventListener("click", () => {
+            nested.classList.toggle("open");
+          });
+
+          for (const k in value) {
+            nested.appendChild(createNode(k, value[k]));
+          }
+
+          wrapper.appendChild(header);
+          wrapper.appendChild(nested);
+        } else {
+          const keySpan = document.createElement("span");
+          keySpan.className = "json-key";
+          keySpan.textContent = key + ": ";
+
+          const valSpan = document.createElement("span");
+          if (typeof value === "string") {
+            valSpan.className = "json-string";
+            valSpan.textContent = `"${value}"`;
+          } else if (typeof value === "number") {
+            valSpan.className = "json-number";
+            valSpan.textContent = value;
+          } else if (typeof value === "boolean") {
+            valSpan.className = "json-boolean";
+            valSpan.textContent = value;
+          } else if (value === null) {
+            valSpan.className = "json-null";
+            valSpan.textContent = "null";
+          }
+
+          wrapper.appendChild(keySpan);
+          wrapper.appendChild(valSpan);
+        }
+
+        return wrapper;
+      }
+
+      for (const key in data) {
+        container.appendChild(createNode(key, data[key]));
+      }
+    }
+  </script>
+</body>
+</html>
